@@ -1,14 +1,41 @@
 import streamlit as st
 import random
-from supabase import create_client
 
 st.set_page_config(page_title="Adivinhador Nº 1", page_icon="🎯", layout="centered")
 
-# conexão com Supabase
-supabase = create_client(
-    st.secrets["SUPABASE_URL"],
-    st.secrets["SUPABASE_KEY"]
-)
+st.markdown("""
+<style>
+.stApp {
+    background: linear-gradient(180deg, #080c1a 0%, #141b3a 100%);
+    color: white;
+}
+
+.titulo {
+    text-align: center;
+    font-size: 42px;
+    font-weight: 800;
+    color: #ffffff;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    text-shadow: 0 0 10px rgba(120, 160, 255, 0.8);
+}
+
+.subtitulo {
+    text-align: center;
+    font-size: 18px;
+    color: #cfd8ff;
+    margin-bottom: 30px;
+}
+
+.bloco {
+    background-color: rgba(255,255,255,0.06);
+    padding: 20px;
+    border-radius: 18px;
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 0 20px rgba(0,0,0,0.25);
+}
+</style>
+""", unsafe_allow_html=True)
 
 if "numero_secreto" not in st.session_state:
     st.session_state.numero_secreto = random.randint(1, 10)
@@ -19,7 +46,13 @@ if "tentativas" not in st.session_state:
 if "acertou" not in st.session_state:
     st.session_state.acertou = False
 
-st.title("🎯 Adivinhador Nº 1")
+if "ranking" not in st.session_state:
+    st.session_state.ranking = []
+
+st.markdown('<div class="titulo">🎯 Adivinhador Nº 1</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitulo">Descubra o número secreto e prove que você é o melhor jogador.</div>', unsafe_allow_html=True)
+
+st.markdown('<div class="bloco">', unsafe_allow_html=True)
 
 nome = st.text_input("Digite seu nome")
 st.write(f"Tentativas: {st.session_state.tentativas}")
@@ -33,11 +66,15 @@ if st.button("Tentar", disabled=st.session_state.acertou):
         st.session_state.acertou = True
         jogador = nome if nome else "Jogador"
 
-        # salva no banco online
-        supabase.table("ranking").insert({
+        st.session_state.ranking.append({
             "nome": jogador,
             "tentativas": st.session_state.tentativas
-        }).execute()
+        })
+
+        st.session_state.ranking = sorted(
+            st.session_state.ranking,
+            key=lambda x: x["tentativas"]
+        )[:5]
 
         st.success(f"🔥 {jogador}, você acertou em {st.session_state.tentativas} tentativa(s).")
 
@@ -52,16 +89,12 @@ if st.button("Jogar novamente"):
     st.session_state.acertou = False
     st.rerun()
 
-st.subheader("🏆 Ranking Online")
+st.markdown('</div>', unsafe_allow_html=True)
 
-try:
-    resposta = supabase.table("ranking").select("*").order("tentativas").limit(10).execute()
-    ranking = resposta.data
+st.subheader("🏆 Ranking")
 
-    if ranking:
-        for i, item in enumerate(ranking, start=1):
-            st.write(f"{i}º - {item['nome']} ({item['tentativas']} tentativas)")
-    else:
-        st.write("Nenhum resultado ainda.")
-except Exception:
-    st.write("Não foi possível carregar o ranking.")
+if st.session_state.ranking:
+    for i, item in enumerate(st.session_state.ranking, start=1):
+        st.write(f"{i}º - {item['nome']} ({item['tentativas']} tentativas)")
+else:
+    st.write("Nenhum resultado ainda.")
