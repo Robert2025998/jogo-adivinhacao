@@ -60,7 +60,19 @@ st.write(f"Tentativas: {st.session_state.tentativas}")
 palpite = st.number_input("Digite seu palpite", min_value=1, max_value=10, step=1)
 
 if st.button("Tentar", disabled=st.session_state.acertou):
-    st.session_state.tentativas += 1
+
+    if not nome:
+        st.warning("Digite seu nome antes de jogar.")
+    else:
+        st.session_state.tentativas += 1
+
+        if palpite == st.session_state.numero_secreto:
+            st.session_state.acertou = True
+
+            st.session_state.ranking.append({
+                "nome": nome,
+                "tentativas": st.session_state.tentativas
+            })
 
     if palpite == st.session_state.numero_secreto:
         st.session_state.acertou = True
